@@ -1,0 +1,40 @@
+services:
+  app:
+    image: myapp-dev:latest # נבנה פעם אחת
+    build: . # רק כשהתלויות משתנות
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      - .:/app # הקוד של ה-worktree הנוכחי
+      - /app/node_modules # שלא ידרוס את מה שה-image הביא
+    environment:
+      DATABASE_URL: postgres://dev:dev@db:5432/app # פנימי — תמיד קבוע
+      ENV_NAME: ${COMPOSE_PROJECT_NAME:-app}
+      APP_GREETING: ${APP_GREETING:-}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: app
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d app"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
