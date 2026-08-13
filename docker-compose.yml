@@ -6,7 +6,7 @@ services:
       - "${APP_PORT:-3000}:3000"
     volumes:
       - .:/app # the current worktree's code
-      - /app/node_modules # don't shadow what the image installed
+      - /app/node_modules # don't shadow what the image installed (incl. pnpm's .pnpm store)
     environment:
       DATABASE_URL: postgres://dev:dev@db:5432/app # internal — always fixed
       ENV_NAME: ${COMPOSE_PROJECT_NAME:-app}

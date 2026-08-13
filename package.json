@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Demo: ten parallel dev environments with git worktrees + Docker",
+  "packageManager": "pnpm@10.29.2",
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js"
