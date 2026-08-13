@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# הדגמה מקצה לקצה: יוצר כמה worktrees ומראה שכל אחד מקבל סביבה נפרדת.
+# End-to-end demo: creates a few worktrees and shows each one getting its own environment.
 #
-#   ./scripts/demo.sh          # 3 סביבות
-#   ./scripts/demo.sh 5        # 5 סביבות
-#   KEEP=1 ./scripts/demo.sh   # לא לנקות בסוף (כדי לשחק עם זה ידנית)
+#   ./scripts/demo.sh          # 3 environments
+#   ./scripts/demo.sh 5        # 5 environments
+#   KEEP=1 ./scripts/demo.sh   # skip cleanup, to poke at them by hand
 #
-# בלי Docker מותקן — הדמו עדיין מריץ את כל לוגיקת הבידוד (שם פרויקט + פורטים)
-# ורק מדלג על ההרמה עצמה.
+# Without Docker installed the demo still runs the whole isolation logic
+# (project name + ports) and only skips bringing the containers up.
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -20,9 +20,9 @@ names=()
 for i in $(seq 1 "$COUNT"); do names+=("feature-$i"); done
 
 cleanup() {
-  [ "${KEEP:-0}" = "1" ] && { echo "↩︎  KEEP=1 — ה-worktrees נשארו ב-$WT_ROOT"; return; }
+  [ "${KEEP:-0}" = "1" ] && { echo "↩︎  KEEP=1 — worktrees left in $WT_ROOT"; return; }
   echo
-  echo "── ניקוי ──"
+  echo "── cleanup ──"
   for name in "${names[@]}"; do
     wt="$WT_ROOT/$name"
     [ -d "$wt" ] || continue
@@ -31,14 +31,14 @@ cleanup() {
     git -C "$ROOT" branch -D "$name" >/dev/null 2>&1 || true
   done
   rmdir "$WT_ROOT" 2>/dev/null || true
-  echo "✓ הכל נוקה."
+  echo "✓ all cleaned up."
 }
 trap cleanup EXIT
 
-echo "── יוצר $COUNT worktrees ──"
+echo "── creating $COUNT worktrees ──"
 for name in "${names[@]}"; do
   git worktree add -b "$name" "$WT_ROOT/$name" >/dev/null
-  # Claude Code עושה את זה לבד לפי .worktreeinclude; כאן מדמים ידנית.
+  # Claude Code does this itself from .worktreeinclude; here we simulate it.
   [ -f "$ROOT/.env" ] && cp "$ROOT/.env" "$WT_ROOT/$name/.env"
   echo "  ✓ $name"
 done
@@ -47,7 +47,7 @@ echo
 printf '%-28s %-22s %-8s %-8s\n' "WORKTREE" "COMPOSE_PROJECT_NAME" "APP" "DB"
 printf '%-28s %-22s %-8s %-8s\n' "----------------------------" "----------------------" "--------" "--------"
 
-# הריפו הראשי — ברירת המחדל שכולם בצוות רגילים אליה
+# The main repo — the defaults the rest of the team is used to
 ( . "$ROOT/scripts/env.sh"
   printf '%-28s %-22s %-8s %-8s\n' "(main repo)" "$COMPOSE_PROJECT_NAME" "$APP_PORT" "$DB_PORT" )
 
@@ -58,19 +58,19 @@ done
 
 if [ "$HAS_DOCKER" = "0" ]; then
   echo
-  echo "⚠️  Docker לא זמין — מדלג על ההרמה בפועל."
-  echo "    עם Docker, הדמו היה מריץ dev-up.sh בכל worktree ו-curl לכל אחד."
+  echo "⚠️  Docker unavailable — skipping the actual bring-up."
+  echo "    With Docker, the demo would run dev-up.sh in each worktree and curl each one."
   exit 0
 fi
 
 echo
-echo "── מרים את כל הסביבות ──"
+echo "── bringing every environment up ──"
 for name in "${names[@]}"; do
   (cd "$WT_ROOT/$name" && ./scripts/dev-up.sh)
 done
 
 echo
-echo "── בודק שכל סביבה עונה על הפורט שלה ──"
+echo "── checking each environment answers on its own port ──"
 for name in "${names[@]}"; do
   port=$(grep '^APP_PORT=' "$WT_ROOT/$name/.env.ports" | cut -d= -f2)
   echo "  $name → localhost:$port"
@@ -78,5 +78,5 @@ for name in "${names[@]}"; do
 done
 
 echo
-echo "── קונטיינרים שרצים עכשיו ──"
+echo "── running environments ──"
 docker compose ls

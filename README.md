@@ -1,36 +1,37 @@
-# עשר סביבות פיתוח במקביל — דמו
+# Ten parallel dev environments — demo
 
-ריפו מינימלי (Node + Postgres) שמדגים את מה שהפוסט מתאר: כל git worktree מקבל
-סביבת Docker משלו, עם פורטים פנויים ו-DB נפרד, בלי build מחדש ובלי התנגשויות.
+A minimal repo (Node + Postgres) demonstrating the setup from the post: every git
+worktree gets its own Docker environment, with free ports and a separate DB, with
+no rebuild and no collisions.
 
-## הרצה מהירה
+## Quick start
 
 ```bash
 cp .env.example .env
-./scripts/demo.sh 3     # יוצר 3 worktrees, מרים לכל אחד סביבה, מנקה בסוף
+./scripts/demo.sh 3     # creates 3 worktrees, brings each environment up, cleans up after
 ```
 
-`KEEP=1 ./scripts/demo.sh` משאיר את ה-worktrees כדי לשחק איתם ידנית.
+`KEEP=1 ./scripts/demo.sh` leaves the worktrees around to poke at by hand.
 
-## מה יש כאן
+## What's here
 
-| קובץ | תפקיד |
+| File | Role |
 | --- | --- |
-| [docker-compose.yml](docker-compose.yml) | פורטים כמשתנים עם ברירת מחדל; הקוד נכנס כ-bind mount |
-| [Dockerfile](Dockerfile) | תלויות בלבד — נבנה פעם אחת |
-| [scripts/env.sh](scripts/env.sh) | הליבה: זיהוי worktree, הגרלת פורטים, `COMPOSE_PROJECT_NAME` |
-| [scripts/dev-up.sh](scripts/dev-up.sh) | הרמה אידמפוטנטית + סידינג מדאמפ |
-| [scripts/dev-down.sh](scripts/dev-down.sh) | הורדה של הסביבה הזאת בלבד |
-| [scripts/demo.sh](scripts/demo.sh) | ההדגמה מקצה לקצה |
-| [CLAUDE.md](CLAUDE.md) | החיווט לקלוד — מגיע לכל worktree דרך גיט |
-| [.claude/settings.json](.claude/settings.json) | hook של `SessionStart` שמרים את הסביבה לבד |
-| [.worktreeinclude](.worktreeinclude) | קבצים שאינם בגיט ובכל זאת צריכים להגיע ל-worktree |
+| [docker-compose.yml](docker-compose.yml) | ports as variables with defaults; code mounted in |
+| [Dockerfile](Dockerfile) | dependencies only — built once |
+| [scripts/env.sh](scripts/env.sh) | the core: worktree detection, port allocation, `COMPOSE_PROJECT_NAME` |
+| [scripts/dev-up.sh](scripts/dev-up.sh) | idempotent bring-up + seeding from a dump |
+| [scripts/dev-down.sh](scripts/dev-down.sh) | tears down this environment only |
+| [scripts/demo.sh](scripts/demo.sh) | the end-to-end demo |
+| [CLAUDE.md](CLAUDE.md) | the wiring for Claude — reaches every worktree via git |
+| [.claude/settings.json](.claude/settings.json) | `SessionStart` hook that brings the environment up on its own |
+| [.worktreeinclude](.worktreeinclude) | non-git files that still need to reach a worktree |
 
-## שלוש נקודות שקל לפספס
+## Three things that are easy to miss
 
-1. **`COMPOSE_PROJECT_NAME` שונה לכל worktree.** בלעדיו compose מתייחס לכולם כאותה
-   סביבה ומוריד לך קונטיינר אחד כשאתה מעלה את השני.
-2. **רק הפורטים החיצוניים משתנים.** בתוך הרשת של compose האפליקציה עדיין מדברת עם
-   `db:5432`, אז אין קונפיגורציה פנימית שצריכה לדעת באיזו סביבה היא רצה.
-3. **`--env-file` מבטל את הטעינה האוטומטית של `.env`.** לכן
-   [scripts/env.sh](scripts/env.sh) מעביר את שניהם כשיש `.env`.
+1. **A distinct `COMPOSE_PROJECT_NAME` per worktree.** Without it compose treats them
+   all as the same environment and tears down one container as you bring up the next.
+2. **Only the host-side ports vary.** Inside the compose network the app still talks
+   to `db:5432`, so no internal config needs to know which environment it's in.
+3. **`--env-file` disables the automatic `.env` load.** That's why
+   [scripts/env.sh](scripts/env.sh) passes both when a `.env` exists.

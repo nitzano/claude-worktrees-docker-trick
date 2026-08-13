@@ -1,24 +1,17 @@
 services:
   app:
-    image: myapp-dev:latest # נבנה פעם אחת
-    build: . # רק כשהתלויות משתנות
+    image: myapp-dev:latest # built once
+    build: . # only when dependencies change
     ports:
       - "${APP_PORT:-3000}:3000"
     volumes:
-      - .:/app # הקוד של ה-worktree הנוכחי
-      - /app/node_modules # שלא ידרוס את מה שה-image הביא
+      - .:/app # the current worktree's code
+      - /app/node_modules # don't shadow what the image installed
     environment:
-      DATABASE_URL: postgres://dev:dev@db:5432/app # פנימי — תמיד קבוע
+      DATABASE_URL: postgres://dev:dev@db:5432/app # internal — always fixed
       ENV_NAME: ${COMPOSE_PROJECT_NAME:-app}
       APP_GREETING: ${APP_GREETING:-}
-    healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
-      interval: 2s
-      timeout: 3s
-      retries: 15
-    depends_on:
-      db:
-        condition: service_healthy
+    depends_on: [db]
 
   db:
     image: postgres:16
@@ -28,7 +21,7 @@ services:
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: dev
       POSTGRES_DB: app
-    healthcheck:
+    healthcheck: # so `up --wait` returns only once psql can accept the seed
       test: ["CMD-SHELL", "pg_isready -U dev -d app"]
       interval: 2s
       timeout: 3s

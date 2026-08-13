@@ -1,15 +1,16 @@
-# ה-image מכיל *רק* את התלויות. הקוד נכנס פנימה כ-bind mount בזמן ריצה.
-# לכן worktree חדש הוא לא build חדש — הוא אותו image עם תיקייה אחרת ממופה.
+# The image holds *only* the dependencies. Code comes in as a bind mount at runtime.
+# That's why a new worktree isn't a new build — it's the same image with a
+# different directory mapped into it.
 FROM node:22-alpine
 
 WORKDIR /app
 
-# רק המניפסטים — כדי שהשכבה הזאת תישאר ב-cache כל עוד התלויות לא השתנו
+# Manifests only, so this layer stays cached as long as dependencies don't change
 COPY package.json package-lock.json* ./
 RUN npm install
 
-# עותק ראשוני של הקוד, כדי שה-image ירוץ גם בלי mount (למשל ב-CI).
-# ב-dev ה-bind mount דורס אותו ממילא.
+# Initial copy of the code so the image also runs without a mount (e.g. in CI).
+# In dev the bind mount shadows it anyway.
 COPY . .
 
 EXPOSE 3000

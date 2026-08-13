@@ -1,12 +1,15 @@
 # worktree-docker-demo
 
-אפליקציית Node קטנה + Postgres, שרצה בסביבה מבודדת לכל worktree.
+A small Node app + Postgres, running in an isolated environment per worktree.
 
-## סביבת פיתוח
+## Dev environment
 
-- אל תריץ שרתים או DB ישירות (`npm run dev`, `docker run`). הרם את הסביבה עם `./scripts/dev-up.sh`.
-- הסקריפט אידמפוטנטי — מותר להריץ שוב אם לא בטוח שהסביבה למעלה.
-- **הפורטים כאן אינם 3000/5432.** הם נמצאים ב-`.env.ports`. קרא משם לפני כל curl או בדיקה בדפדפן.
-- לוגים: `docker compose logs -f app` | טסטים: `docker compose exec app npm test`
-- אם `up` נופל על תלות חסרה — זה `docker compose build`, לא `npm install` על המארח.
-- להוריד הכל בסוף: `./scripts/dev-down.sh` (מוריד רק את הסביבה של ה-worktree הזה).
+- Don't run servers or the DB directly (`npm run dev`, `docker run`). Bring the
+  environment up with `./scripts/dev-up.sh`.
+- The script is idempotent — re-run it if you're unsure whether the environment is up.
+- **The ports here are not 3000/5432.** They live in `.env.ports`. Read them from
+  there before any curl or browser check.
+- Logs: `docker compose logs -f app`
+- If `up` fails on a missing dependency, that's `docker compose build`, not
+  `npm install` on the host.
+- Tear down when done: `./scripts/dev-down.sh` (only affects this worktree).

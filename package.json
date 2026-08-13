@@ -2,11 +2,10 @@
   "name": "worktree-docker-demo",
   "version": "1.0.0",
   "private": true,
-  "description": "דמו: עשר סביבות פיתוח במקביל עם git worktrees + Docker",
+  "description": "Demo: ten parallel dev environments with git worktrees + Docker",
   "scripts": {
     "dev": "node --watch src/server.js",
-    "start": "node src/server.js",
-    "test": "node --test test/"
+    "start": "node src/server.js"
   },
   "dependencies": {
     "pg": "^8.13.1"

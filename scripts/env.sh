@@ -1,33 +1,34 @@
 #!/usr/bin/env bash
-# מחשב את זהות הסביבה של ה-worktree הנוכחי: שם פרויקט + פורטים.
-# הקובץ נועד ל-source, כדי ש-dev-up, dev-down והדמו יראו בדיוק את אותם ערכים.
+# Resolves this worktree's environment identity: project name + ports.
+# Meant to be sourced, so dev-up, dev-down and the demo all see the same values.
 #
-# אחרי source זמינים: COMPOSE_PROJECT_NAME, APP_PORT, DB_PORT, IS_WORKTREE, ENV_FILE_ARGS
+# After sourcing: COMPOSE_PROJECT_NAME, APP_PORT, DB_PORT, IS_WORKTREE, ENV_FILE_ARGS
 
-# מתמקמים לפי המיקום של הקובץ הזה ולא לפי ה-CWD — אחרת סקריפט של worktree אחד
-# שרץ מתוך תיקייה של אחר יקבל את ה-git-dir הלא נכון.
-cd "$(dirname "${BASH_SOURCE[0]}")/.."
+# Anchor on this file's location, not the CWD — otherwise one worktree's script
+# invoked from another's directory would resolve to the wrong git dir.
+cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.."
 cd "$(git rev-parse --show-toplevel)"
 
 free_port() {
   python3 -c 'import socket;s=socket.socket();s.bind(("",0));print(s.getsockname()[1]);s.close()'
 }
 
-# ההבדל היחיד בין ריפו ראשי ל-worktree: ב-worktree ה-git-dir הפרטי
-# (.git/worktrees/<name>) שונה מה-git-dir המשותף.
+# The only difference between the main repo and a worktree: in a worktree the
+# private git dir (.git/worktrees/<name>) differs from the common one.
 if [ "$(git rev-parse --absolute-git-dir)" != "$(cd "$(git rev-parse --git-common-dir)" && pwd)" ]; then
   IS_WORKTREE=1
-  # שם פרויקט משלו — בלי זה compose חושב שכל ה-worktrees הם אותה סביבה
-  # ומוריד לך את הקונטיינר של אחד כשאתה מעלה את השני.
+  # Its own project name — without this compose treats every worktree as the same
+  # environment and tears down one container while you bring up the next.
   COMPOSE_PROJECT_NAME="app-$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/-*$//')"
-  # פורטים מוגרלים פעם אחת ונשמרים, כדי שכתובת הסביבה תישאר יציבה כל עוד ה-worktree חי
+  # Ports are drawn once and persisted, so the environment's address stays stable
+  # for as long as the worktree lives.
   if [ ! -f .env.ports ]; then
     printf 'APP_PORT=%s\nDB_PORT=%s\n' "$(free_port)" "$(free_port)" > .env.ports
   fi
 else
   IS_WORKTREE=0
   COMPOSE_PROJECT_NAME="app"
-  # ריפו ראשי: הפורטים הקבועים שכולם בצוות רגילים אליהם
+  # Main repo: the fixed ports everyone on the team already expects.
   printf 'APP_PORT=3000\nDB_PORT=5432\n' > .env.ports
 fi
 
@@ -36,6 +37,10 @@ set -a
 . ./.env.ports
 set +a
 
-# מלכודת: --env-file מבטל את הטעינה האוטומטית של .env. אם יש .env, מעבירים את שניהם.
-ENV_FILE_ARGS=(--env-file .env.ports)
-[ -f .env ] && ENV_FILE_ARGS=(--env-file .env --env-file .env.ports)
+# Gotcha: --env-file disables the automatic .env load. Pass both when .env exists.
+# (A full if, not &&: a sourced file must end successfully or set -e kills the caller.)
+if [ -f .env ]; then
+  ENV_FILE_ARGS=(--env-file .env --env-file .env.ports)
+else
+  ENV_FILE_ARGS=(--env-file .env.ports)
+fi

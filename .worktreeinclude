@@ -1,5 +1,5 @@
-# קבצים שאינם בגיט ובכל זאת צריכים להגיע לכל worktree חדש.
+# Files that aren't in git but still need to reach every new worktree.
 .env
 
-# שים לב: .env.ports *לא* נמצא כאן בכוונה —
-# כל worktree חייב להגריל לעצמו פורטים חדשים.
+# Note: .env.ports is deliberately absent —
+# every worktree must draw its own fresh ports.
