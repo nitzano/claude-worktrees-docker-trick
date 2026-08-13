@@ -49,11 +49,11 @@ echo
 printf '%-24s %-34s\n' "DIRECTORY (= project)" "PORT MAPPING"
 printf '%-24s %-34s\n' "------------------------" "----------------------------------"
 
-mapping() { # what compose will actually publish, after any override merge
-  if [ -f docker-compose.override.yml ]; then
+mapping() { # what compose will actually publish, given COMPOSE_FILE
+  if [ "$IS_WORKTREE" = "1" ]; then
     echo "app 3000, db 5432 → docker-assigned"
   else
-    echo "3000:3000, 5432:5432 (committed)"
+    echo "3000:3000, 5432:5432 (fixed)"
   fi
 }
 
@@ -67,7 +67,7 @@ for name in "${names[@]}"; do
 done
 
 echo
-echo "Each worktree got a generated docker-compose.override.yml; the main repo did not."
+echo "Worktrees layer docker-compose.worktree.yml via COMPOSE_FILE; the main repo doesn't."
 
 if [ "$HAS_DOCKER" = "0" ]; then
   echo

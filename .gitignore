@@ -1,5 +1,2 @@
 node_modules/
 .env
-
-# Generated per worktree by scripts/env.sh
-docker-compose.override.yml

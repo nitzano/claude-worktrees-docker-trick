@@ -1,0 +1,17 @@
+# Overlay used only in worktrees, layered on top of docker-compose.yml by setting
+# COMPOSE_FILE (see scripts/env.sh). Publishing the container port with no host side
+# makes Docker assign a free host port at bind time — nothing to allocate or persist.
+#
+# Deliberately NOT named docker-compose.override.yml: compose auto-loads that name,
+# which would apply it in the main repo too and cost everyone their fixed 3000/5432.
+#
+# !override replaces the ports list. Compose *appends* when merging by default, so
+# without it the committed "3000:3000" stays published alongside. Needs Compose >= 2.24.
+services:
+  app:
+    ports: !override
+      - "3000"
+
+  db:
+    ports: !override
+      - "5432"
