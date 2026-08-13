@@ -9,7 +9,6 @@ services:
       - /app/node_modules # don't shadow what the image installed (incl. pnpm's .pnpm store)
     environment:
       DATABASE_URL: postgres://dev:dev@db:5432/app # internal — always fixed
-      ENV_NAME: ${COMPOSE_PROJECT_NAME:-app}
       APP_GREETING: ${APP_GREETING:-}
     depends_on: [db]
 

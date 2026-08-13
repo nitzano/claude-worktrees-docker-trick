@@ -44,16 +44,18 @@ for name in "${names[@]}"; do
 done
 
 echo
-printf '%-28s %-22s %-8s %-8s\n' "WORKTREE" "COMPOSE_PROJECT_NAME" "APP" "DB"
-printf '%-28s %-22s %-8s %-8s\n' "----------------------------" "----------------------" "--------" "--------"
+# The directory column is also the compose project name — compose derives it from
+# the directory, which is why worktrees don't need one set explicitly.
+printf '%-24s %-8s %-8s\n' "DIRECTORY (= project)" "APP" "DB"
+printf '%-24s %-8s %-8s\n' "------------------------" "--------" "--------"
 
 # The main repo — the defaults the rest of the team is used to
 ( . "$ROOT/scripts/env.sh"
-  printf '%-28s %-22s %-8s %-8s\n' "(main repo)" "$COMPOSE_PROJECT_NAME" "$APP_PORT" "$DB_PORT" )
+  printf '%-24s %-8s %-8s\n' "(main repo)" "$APP_PORT" "$DB_PORT" )
 
 for name in "${names[@]}"; do
   ( . "$WT_ROOT/$name/scripts/env.sh"
-    printf '%-28s %-22s %-8s %-8s\n' "$name" "$COMPOSE_PROJECT_NAME" "$APP_PORT" "$DB_PORT" )
+    printf '%-24s %-8s %-8s\n' "$name" "$APP_PORT" "$DB_PORT" )
 done
 
 if [ "$HAS_DOCKER" = "0" ]; then

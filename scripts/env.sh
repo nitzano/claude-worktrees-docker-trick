@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# Resolves this worktree's environment identity: project name + ports.
+# Resolves this worktree's environment: which ports it publishes on.
 # Meant to be sourced, so dev-up, dev-down and the demo all see the same values.
 #
-# After sourcing: COMPOSE_PROJECT_NAME, APP_PORT, DB_PORT, IS_WORKTREE, ENV_FILE_ARGS
+# Note there's no project name here — compose derives it from the directory name,
+# and every worktree already lives in its own directory.
+#
+# After sourcing: APP_PORT, DB_PORT, IS_WORKTREE, ENV_FILE_ARGS
 
 # Anchor on this file's location, not the CWD — otherwise one worktree's script
 # invoked from another's directory would resolve to the wrong git dir.
@@ -17,9 +20,6 @@ free_port() {
 # private git dir (.git/worktrees/<name>) differs from the common one.
 if [ "$(git rev-parse --absolute-git-dir)" != "$(cd "$(git rev-parse --git-common-dir)" && pwd)" ]; then
   IS_WORKTREE=1
-  # Its own project name — without this compose treats every worktree as the same
-  # environment and tears down one container while you bring up the next.
-  COMPOSE_PROJECT_NAME="app-$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/-*$//')"
   # Ports are drawn once and persisted, so the environment's address stays stable
   # for as long as the worktree lives.
   if [ ! -f .env.ports ]; then
@@ -27,12 +27,10 @@ if [ "$(git rev-parse --absolute-git-dir)" != "$(cd "$(git rev-parse --git-commo
   fi
 else
   IS_WORKTREE=0
-  COMPOSE_PROJECT_NAME="app"
   # Main repo: the fixed ports everyone on the team already expects.
   printf 'APP_PORT=3000\nDB_PORT=5432\n' > .env.ports
 fi
 
-export COMPOSE_PROJECT_NAME
 set -a
 . ./.env.ports
 set +a

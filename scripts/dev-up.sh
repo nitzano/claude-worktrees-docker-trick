@@ -18,4 +18,4 @@ docker compose "${ENV_FILE_ARGS[@]}" up -d --no-build --wait
 # empty DB. Seeding from a dump takes seconds instead of migrating from scratch.
 docker compose "${ENV_FILE_ARGS[@]}" exec -T db psql -q -U dev -d app < seed.sql
 
-echo "✅ environment up [${COMPOSE_PROJECT_NAME}] — APP: http://localhost:${APP_PORT} | DB: localhost:${DB_PORT}"
+echo "✅ environment up [$(basename "$PWD")] — APP: http://localhost:${APP_PORT} | DB: localhost:${DB_PORT}"
