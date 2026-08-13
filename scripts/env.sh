@@ -4,6 +4,9 @@
 #
 # אחרי source זמינים: COMPOSE_PROJECT_NAME, APP_PORT, DB_PORT, IS_WORKTREE, ENV_FILE_ARGS
 
+# מתמקמים לפי המיקום של הקובץ הזה ולא לפי ה-CWD — אחרת סקריפט של worktree אחד
+# שרץ מתוך תיקייה של אחר יקבל את ה-git-dir הלא נכון.
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
 cd "$(git rev-parse --show-toplevel)"
 
 free_port() {
