@@ -4,5 +4,5 @@ set -euo pipefail
 
 . "$(dirname "$0")/env.sh"
 
-docker compose "${ENV_FILE_ARGS[@]}" down -v
+docker compose down -v
 echo "🧹 environment [$(basename "$PWD")] is down."

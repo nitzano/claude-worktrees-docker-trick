@@ -17,9 +17,9 @@ cp .env.example .env
 
 | File | Role |
 | --- | --- |
-| [docker-compose.yml](docker-compose.yml) | ports as variables with defaults; code mounted in |
+| [docker-compose.yml](docker-compose.yml) | the team default: fixed ports, code mounted in |
 | [Dockerfile](Dockerfile) | dependencies only — built once |
-| [scripts/env.sh](scripts/env.sh) | the core: worktree detection and port allocation |
+| [scripts/env.sh](scripts/env.sh) | the core: worktree detection, generates the ports override |
 | [scripts/dev-up.sh](scripts/dev-up.sh) | idempotent bring-up + seeding from a dump |
 | [scripts/dev-down.sh](scripts/dev-down.sh) | tears down this environment only |
 | [scripts/demo.sh](scripts/demo.sh) | the end-to-end demo |
@@ -36,5 +36,6 @@ cp .env.example .env
    basename.
 2. **Only the host-side ports vary.** Inside the compose network the app still talks
    to `db:5432`, so no internal config needs to know which environment it's in.
-3. **`--env-file` disables the automatic `.env` load.** That's why
-   [scripts/env.sh](scripts/env.sh) passes both when a `.env` exists.
+3. **Compose *appends* to a `ports` list when merging an override file.** Without the
+   `!override` tag the committed `3000:3000` stays published alongside the new
+   mapping, and worktrees collide on 3000 anyway. The tag needs Compose >= 2.24.

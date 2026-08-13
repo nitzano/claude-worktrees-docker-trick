@@ -3,7 +3,9 @@ services:
     image: myapp-dev:latest # built once
     build: . # only when dependencies change
     ports:
-      - "${APP_PORT:-3000}:3000"
+      # The team default. Worktrees replace this via a generated
+      # docker-compose.override.yml — see scripts/env.sh.
+      - "3000:3000"
     volumes:
       - .:/app # the current worktree's code
       - /app/node_modules # don't shadow what the image installed (incl. pnpm's .pnpm store)
@@ -15,7 +17,7 @@ services:
   db:
     image: postgres:16
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "5432:5432"
     environment:
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: dev

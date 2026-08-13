@@ -5,8 +5,8 @@
 #   ./scripts/demo.sh 5        # 5 environments
 #   KEEP=1 ./scripts/demo.sh   # skip cleanup, to poke at them by hand
 #
-# Without Docker installed the demo still runs the whole isolation logic
-# (project name + ports) and only skips bringing the containers up.
+# Without Docker installed the demo still shows how each checkout maps its ports,
+# and only skips bringing the containers up.
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -46,17 +46,28 @@ done
 echo
 # The directory column is also the compose project name — compose derives it from
 # the directory, which is why worktrees don't need one set explicitly.
-printf '%-24s %-8s %-8s\n' "DIRECTORY (= project)" "APP" "DB"
-printf '%-24s %-8s %-8s\n' "------------------------" "--------" "--------"
+printf '%-24s %-34s\n' "DIRECTORY (= project)" "PORT MAPPING"
+printf '%-24s %-34s\n' "------------------------" "----------------------------------"
+
+mapping() { # what compose will actually publish, after any override merge
+  if [ -f docker-compose.override.yml ]; then
+    echo "app 3000, db 5432 → docker-assigned"
+  else
+    echo "3000:3000, 5432:5432 (committed)"
+  fi
+}
 
 # The main repo — the defaults the rest of the team is used to
 ( . "$ROOT/scripts/env.sh"
-  printf '%-24s %-8s %-8s\n' "(main repo)" "$APP_PORT" "$DB_PORT" )
+  printf '%-24s %-34s\n' "(main repo)" "$(mapping)" )
 
 for name in "${names[@]}"; do
   ( . "$WT_ROOT/$name/scripts/env.sh"
-    printf '%-24s %-8s %-8s\n' "$name" "$APP_PORT" "$DB_PORT" )
+    printf '%-24s %-34s\n' "$name" "$(mapping)" )
 done
+
+echo
+echo "Each worktree got a generated docker-compose.override.yml; the main repo did not."
 
 if [ "$HAS_DOCKER" = "0" ]; then
   echo
@@ -72,11 +83,13 @@ for name in "${names[@]}"; do
 done
 
 echo
-echo "── checking each environment answers on its own port ──"
+echo "── checking each environment answers on the port Docker gave it ──"
 for name in "${names[@]}"; do
-  port=$(grep '^APP_PORT=' "$WT_ROOT/$name/.env.ports" | cut -d= -f2)
-  echo "  $name → localhost:$port"
-  curl -s "http://localhost:$port/" | sed 's/^/    /'
+  ( cd "$WT_ROOT/$name"
+    . ./scripts/env.sh
+    port=$(published_port app 3000)
+    echo "  $name → localhost:$port"
+    curl -s "http://localhost:$port/" | sed 's/^/    /' )
 done
 
 echo

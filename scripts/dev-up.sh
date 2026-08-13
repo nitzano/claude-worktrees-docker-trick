@@ -10,12 +10,14 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 # The slow path runs once in a lifetime; after that it's just `up`.
-docker image inspect myapp-dev:latest >/dev/null 2>&1 || docker compose "${ENV_FILE_ARGS[@]}" build
+docker image inspect myapp-dev:latest >/dev/null 2>&1 || docker compose build
 
-docker compose "${ENV_FILE_ARGS[@]}" up -d --no-build --wait
+docker compose up -d --no-build --wait
 
-# Named volumes get the project name as a prefix, so every worktree starts with an
+# Named volumes are prefixed with the project name, so every worktree starts with an
 # empty DB. Seeding from a dump takes seconds instead of migrating from scratch.
-docker compose "${ENV_FILE_ARGS[@]}" exec -T db psql -q -U dev -d app < seed.sql
+docker compose exec -T db psql -q -U dev -d app < seed.sql
 
-echo "✅ environment up [$(basename "$PWD")] — APP: http://localhost:${APP_PORT} | DB: localhost:${DB_PORT}"
+# This line is the point: SessionStart hook stdout lands in Claude's context, so the
+# agent reads the real port instead of assuming 3000.
+echo "✅ environment up [$(basename "$PWD")] — APP: http://localhost:$(published_port app 3000) | DB: localhost:$(published_port db 5432)"

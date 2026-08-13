@@ -1,5 +1,5 @@
 # Files that aren't in git but still need to reach every new worktree.
 .env
 
-# Note: .env.ports is deliberately absent —
-# every worktree must draw its own fresh ports.
+# Note: docker-compose.override.yml is deliberately absent —
+# scripts/env.sh generates it per worktree.

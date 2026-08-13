@@ -1,44 +1,45 @@
 #!/usr/bin/env bash
-# Resolves this worktree's environment: which ports it publishes on.
-# Meant to be sourced, so dev-up, dev-down and the demo all see the same values.
+# Makes this checkout publish on ports that can't collide. Meant to be sourced.
 #
-# Note there's no project name here — compose derives it from the directory name,
-# and every worktree already lives in its own directory.
+# Main repo  → docker-compose.yml as committed: fixed 3000/5432, what the team expects.
+# Worktree   → generates a docker-compose.override.yml that maps the container ports
+#              with no host side, so Docker assigns free host ports at bind time.
+#              Nothing to allocate, nothing to persist, nothing to race.
 #
-# After sourcing: APP_PORT, DB_PORT, IS_WORKTREE, ENV_FILE_ARGS
+# Compose merges docker-compose.override.yml automatically, so this holds for any
+# bare `docker compose ...` run in the directory — not just for these scripts.
+#
+# There's no project name here — compose derives it from the directory, and every
+# worktree already lives in its own.
+#
+# After sourcing: IS_WORKTREE, published_port()
 
 # Anchor on this file's location, not the CWD — otherwise one worktree's script
 # invoked from another's directory would resolve to the wrong git dir.
 cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.."
 cd "$(git rev-parse --show-toplevel)"
 
-free_port() {
-  python3 -c 'import socket;s=socket.socket();s.bind(("",0));print(s.getsockname()[1]);s.close()'
-}
-
 # The only difference between the main repo and a worktree: in a worktree the
 # private git dir (.git/worktrees/<name>) differs from the common one.
 if [ "$(git rev-parse --absolute-git-dir)" != "$(cd "$(git rev-parse --git-common-dir)" && pwd)" ]; then
   IS_WORKTREE=1
-  # Ports are drawn once and persisted, so the environment's address stays stable
-  # for as long as the worktree lives.
-  if [ ! -f .env.ports ]; then
-    printf 'APP_PORT=%s\nDB_PORT=%s\n' "$(free_port)" "$(free_port)" > .env.ports
+  if [ ! -f docker-compose.override.yml ]; then
+    # !override replaces the ports list. Without it compose *appends*, and the
+    # committed "3000:3000" would still be published alongside. Needs Compose >= 2.24.
+    cat > docker-compose.override.yml <<'YAML'
+# Generated per worktree, gitignored. Publishes on Docker-assigned host ports.
+services:
+  app:
+    ports: !override
+      - "3000"
+  db:
+    ports: !override
+      - "5432"
+YAML
   fi
 else
   IS_WORKTREE=0
-  # Main repo: the fixed ports everyone on the team already expects.
-  printf 'APP_PORT=3000\nDB_PORT=5432\n' > .env.ports
 fi
 
-set -a
-. ./.env.ports
-set +a
-
-# Gotcha: --env-file disables the automatic .env load. Pass both when .env exists.
-# (A full if, not &&: a sourced file must end successfully or set -e kills the caller.)
-if [ -f .env ]; then
-  ENV_FILE_ARGS=(--env-file .env --env-file .env.ports)
-else
-  ENV_FILE_ARGS=(--env-file .env.ports)
-fi
+# Ports are chosen at bind time, so ask Docker instead of tracking them anywhere.
+published_port() { docker compose port "$1" "$2" | awk -F: '{print $NF}'; }

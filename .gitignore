@@ -1,3 +1,5 @@
 node_modules/
 .env
-.env.ports
+
+# Generated per worktree by scripts/env.sh
+docker-compose.override.yml
