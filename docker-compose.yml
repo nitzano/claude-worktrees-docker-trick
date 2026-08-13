@@ -3,8 +3,8 @@ services:
     image: myapp-dev:latest # built once
     build: . # only when dependencies change
     ports:
-      # The team default. Worktrees replace this via a generated
-      # docker-compose.override.yml — see scripts/env.sh.
+      # The team default. Worktrees replace it with docker-compose.worktree.yml,
+      # layered on via COMPOSE_FILE — see scripts/env.sh.
       - "3000:3000"
     volumes:
       - .:/app # the current worktree's code
